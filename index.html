@@ -1,0 +1,345 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <link href='http://fonts.googleapis.com/css?family=Sigmar+One' rel='stylesheet' type='text/css'>
+  <link href='http://fonts.googleapis.com/css?family=Merriweather+Sans' rel='stylesheet' type='text/css'>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.4.0/moment-timezone-with-data-2010-2020.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jstimezonedetect/1.0.4/jstz.min.js"></script>
+  <title>Tera Timers</title>
+  <style type="text/css">
+        html {
+             min-height: 100%;
+        }
+
+        body {
+            margin-left: 0px;
+            margin-top: 0px;
+            margin-right: 0px;
+            margin-bottom: 0px;
+        }
+
+        .heartwood {
+            width: 100%;
+            height: 100vh;
+            background: #060634 center bottom no-repeat;
+        }
+
+        .content {
+            width: 1060px;
+            margin: 0 auto;
+            color: #eee;
+            font-family: 'Merriweather Sans', sans-serif;
+            font-size: 18px;
+        }
+
+        .site {
+            padding-top: 50px;
+            color: #acdefb;
+            text-align: center;
+            font-family: 'Sigmar One', cursive;
+            font-size: 40px;
+        }
+
+        .section {
+            margin: 40px 0;
+            padding: 5px;
+        }
+
+        .subsection {
+            float: left;
+            margin: 0 5px;
+            width: 340px;
+        }
+
+        .title {
+            color: #bfbaff;
+            font-family: Verdana, sans-serif;
+            font-size: 28px;
+        }
+
+        .type {
+            color: #89b1f0;
+            font-family: Verdana, sans-serif;
+            font-size: 20px;
+        }
+
+        .event {
+            padding: 10px 0;
+        }
+
+        .date {
+            color: #acdefb;
+            font-family: Verdana;
+            font-size: 14px;
+        }
+
+        .time {
+            color: #fff;
+            font-family: 'Merriweather Sans', sans-serif;
+            font-size: 18px;
+        }
+
+    .soon {
+      color: #ffb535;
+    }
+
+    .very-soon {
+      color: #ff5f5f;
+    }
+  </style>
+</head>
+<body>
+  <div id="bg" class="heartwood">
+    <div class="content">
+      <div class="site">NA Tera Timers</div>
+      <div id="now" class="time" style="text-align: center;"></div>
+
+      <div class="section">
+        <div class="title">Daily Timers</div>
+        <div class="subsection">
+          <div class="type">Dailies Reset</div>
+          <div class="event">
+            <div id="daily-date" class="date">...</div>
+            <div id="daily-count" class="time">...</div>
+          </div>
+        </div>
+        <div class="subsection">
+          <div class="type">Elite Reset</div>
+          <div class="event">
+            <div id="elite-date" class="date">...</div>
+            <div id="elite-count" class="time">...</div>
+          </div>
+        </div>
+        <br clear="all" />
+      </div>
+
+      <div class="section">
+        <div class="title">Dreamstorm Event</div>
+        <div id="dream-next" class="subsection">
+          <div class="type">Next</div>
+        </div>
+        <div id="dream-tier-one" class="subsection">
+          <div class="type">Next</div>
+        </div>
+        <div id="dream-tier-two" class="subsection">
+          <div class="type">Next</div>
+        </div>
+        <br clear="all" />
+      </div>
+
+    </div>
+  </div>
+</body>
+<script>
+var Tera = {
+  now: 0,
+  tomorrow: 0,
+  dreamstormTiers: [12, 24],
+
+  dailyResetHour: 5,
+  dailyResetMinute: 0,
+  eliteResetHour: 17,
+  eliteResetMinute: 0,
+  dreamstormHour: [1,4,10,14,18,20],
+  dreamstormMinute: [0,0,0,0,0,0],
+
+  dailyResetTime: 0,
+  eliteResetTime: 0,
+  dreamstormTime: [],
+
+    init: function() {
+    this.timezone = jstz.determine();
+
+    var discussionBoxCheck = setInterval(function(){
+      Tera.update();
+    }, 250);
+  },
+  update: function() {
+    // Get current times
+    this.now = moment().tz("America/Los_Angeles");
+    this.tomorrow = moment().add(1, 'days').startOf('day');
+    this.tierOne = moment().add(this.dreamstormTiers[0], 'hours');
+    this.tierTwo = moment().add(this.dreamstormTiers[1], 'hours');
+    var time, tempMoment;
+
+    var difference = moment().local().subtract(this.now, 'seconds')
+    difference = difference.format("HH:mm");
+    difference = difference.split(":");
+    difference = (difference[0] * 60 * 60) + (difference[1] * 60);
+
+    this.now.local();
+
+    // Set daily reset time
+    if (this.now.hour() < this.dailyResetHour) {
+      this.dailyResetTime = moment({y: this.now.year(), M: this.now.month(), d: this.now.date(), h: this.dailyResetHour, m: this.dailyResetMinute, s: 0, ms: 0}).unix();
+    } else {
+      this.dailyResetTime = moment({y: this.tomorrow.year(), M: this.tomorrow.month(), d: this.tomorrow.date(), h: this.dailyResetHour, m: this.dailyResetMinute, s: 0, ms: 0}).unix();
+    }
+    this.dailyResetTime += difference;
+
+    // Set elite reset time
+    if (this.now.hour() < this.eliteResetHour) {
+      this.eliteResetTime = moment({y: this.now.year(), M: this.now.month(), d: this.now.date(), h: this.eliteResetHour, m: this.eliteResetMinute, s: 0, ms: 0}).unix();
+    } else {
+      this.eliteResetTime = moment({y: this.tomorrow.year(), M: this.tomorrow.month(), d: this.tomorrow.date(), h: this.eliteResetHour, m: this.eliteResetMinute, s: 0, ms: 0}).unix();
+    }
+    this.eliteResetTime += difference;
+
+    // Set dreamstorm times
+    this.dreamstormTime.length = [];
+    tempMoment = this.tierTwo.unix();
+    for (var i=0; i < this.dreamstormHour.length && i < this.dreamstormMinute.length; i++) {
+      var time = moment({y: this.now.year(), M: this.now.month(), d: this.now.date(), h: this.dreamstormHour[i], m: this.dreamstormMinute[i], s: 0, ms: 0}).unix();
+      time += difference;
+
+      if (time > this.now.unix() && time < tempMoment) {
+        this.dreamstormTime.push(time);
+      }
+    }
+
+    for (var i=0; i < this.dreamstormHour.length && i < this.dreamstormMinute.length; i++) {
+      var time = moment({y: this.tomorrow.year(), M: this.tomorrow.month(), d: this.tomorrow.date(), h: this.dreamstormHour[i], m: this.dreamstormMinute[i], s: 0, ms: 0}).unix();
+      time += difference;
+
+      if (time > this.now.unix() && time < tempMoment) {
+        this.dreamstormTime.push(time);
+      }
+    }
+
+    // Update display
+    // Update now
+
+    this.now.local();
+    $('#now').html(this.now.format("dddd, MMMM Do YYYY, h:mm:ss a") +" "+ moment().tz(this.timezone.name()).format('z'));
+
+    // Update daily reset
+    tempMoment = moment(this.dailyResetTime*1000).local();
+    $('#daily-date').html(tempMoment.format('dddd') +" @ "+ tempMoment.format('h:mma') +" "+ moment().tz(this.timezone.name()).format('z'));
+
+    time = this.dailyResetTime - this.now.unix();
+    if (time < 1800) {
+      $('#daily-count').attr("class","time very-soon");
+    } else if (time < 3600) {
+      $('#daily-count').attr("class","time soon");
+    } else {
+      $('#daily-count').attr("class","time");
+    }
+    $('#daily-count').html(Tera.convert(time));
+
+    // Update elite reset
+    tempMoment = moment(this.eliteResetTime*1000).local();
+    $('#elite-date').html(tempMoment.format('dddd') +" @ "+ tempMoment.format('h:mma') +" "+ moment().tz(this.timezone.name()).format('z'));
+
+    time = this.eliteResetTime - this.now.unix();
+    if (time < 1800) {
+      $('#elite-count').attr("class","time very-soon");
+    } else if (time < 3600) {
+      $('#elite-count').attr("class","time soon");
+    } else {
+      $('#elite-count').attr("class","time");
+    }
+    $('#elite-count').html(Tera.convert(time));
+
+    // Update next dreamstorm event
+    $('#dream-next').html('<div class="type">Next</div>');
+
+    tempMoment = moment(this.dreamstormTime[0]*1000).local();
+    time = this.dreamstormTime[0] - this.now.unix();
+    if (time < 1800) {
+      $('#dream-next').append('<div class="event"><div class="date">' +tempMoment.format('dddd') +' @ '+ tempMoment.format('h:mma') +" "+ moment().tz(this.timezone.name()).format('z') +'</div><div class="time very-soon">'+ Tera.convert(time) +'</div></div>');
+    } else if (time < 3600) {
+      $('#dream-next').append('<div class="event"><div class="date">' +tempMoment.format('dddd') +' @ '+ tempMoment.format('h:mma') +" "+ moment().tz(this.timezone.name()).format('z') +'</div><div class="time soon">'+ Tera.convert(time) +'</div></div>');
+    } else {
+      $('#dream-next').append('<div class="event"><div class="date">' +tempMoment.format('dddd') +' @ '+ tempMoment.format('h:mma') +" "+ moment().tz(this.timezone.name()).format('z') +'</div><div class="time">'+ Tera.convert(time) +'</div></div>');
+    }
+
+    // Update next tierOne hours dreamstorm event
+    $('#dream-tier-one').html('<div class="type">Next '+ this.dreamstormTiers[0] +' Hours</div>');
+
+    for (var i=1; i < this.dreamstormHour.length; i++) {
+      if (this.dreamstormTime[i] < this.tierOne.unix()) {
+        tempMoment = moment(this.dreamstormTime[i]*1000).local();
+        time = this.dreamstormTime[i] - this.now.unix();
+
+        if (time < 1800) {
+          $('#dream-tier-one').append('<div class="event"><div class="date">' +tempMoment.format('dddd') +' @ '+ tempMoment.format('h:mma') +" "+ moment().tz(this.timezone.name()).format('z') +'</div><div class="time very-soon">'+ Tera.convert(time) +'</div></div>');
+        } else if (time < 3600) {
+          $('#dream-tier-one').append('<div class="event"><div class="date">' +tempMoment.format('dddd') +' @ '+ tempMoment.format('h:mma') +" "+ moment().tz(this.timezone.name()).format('z') +'</div><div class="time soon">'+ Tera.convert(time) +'</div></div>');
+        } else {
+          $('#dream-tier-one').append('<div class="event"><div class="date">' +tempMoment.format('dddd') +' @ '+ tempMoment.format('h:mma') +" "+ moment().tz(this.timezone.name()).format('z') +'</div><div class="time">'+ Tera.convert(time) +'</div></div>');
+        }
+      }
+    }
+
+    // Update next tierTwo hours dreamstorm event
+    $('#dream-tier-two').html('<div class="type">Next '+ this.dreamstormTiers[1] +' Hours</div>');
+
+    for (var i=0; i < this.dreamstormHour.length; i++) {
+      if (this.dreamstormTime[i] > this.tierOne.unix() && this.dreamstormTime[i] < this.tierTwo.unix()) {
+        tempMoment = moment(this.dreamstormTime[i]*1000).local();
+        time = this.dreamstormTime[i] - this.now.unix();
+
+        if (time < 1800) {
+          $('#dream-tier-two').append('<div class="event"><div class="date">' +tempMoment.format('dddd') +' @ '+ tempMoment.format('h:mma') +" "+ moment().tz(this.timezone.name()).format('z') +'</div><div class="time very-soon">'+ Tera.convert(time) +'</div></div>');
+        } else if (time < 3600) {
+          $('#dream-tier-two').append('<div class="event"><div class="date">' +tempMoment.format('dddd') +' @ '+ tempMoment.format('h:mma') +" "+ moment().tz(this.timezone.name()).format('z') +'</div><div class="time soon">'+ Tera.convert(time) +'</div></div>');
+        } else {
+          $('#dream-tier-two').append('<div class="event"><div class="date">' +tempMoment.format('dddd') +' @ '+ tempMoment.format('h:mma') +" "+ moment().tz(this.timezone.name()).format('z') +'</div><div class="time">'+ Tera.convert(time) +'</div></div>');
+        }
+      }
+    }
+  },
+  convert: function(time) {
+    var string = "";
+    var h = Math.floor(time / 3600);
+    var m = Math.floor((time - (h*3600)) / 60);
+    var s = time%60;
+
+    if (h > 0) {
+      if (h > 1) {
+        string = h +" hours ";
+      } else {
+        string = h +" hour ";
+      }
+    }
+
+    if (m > 0) {
+      if (m > 1) {
+        string += m +" minutes ";
+      } else {
+        string += m +" minute ";
+      }
+    }
+
+    if(h > 0 || m > 0) {
+      string += " and ";
+    }
+
+    if (s > 1 || s == 0) {
+      string += s +" seconds";
+    } else {
+      string += s +" second";
+    }
+
+    return string;
+  }
+};
+
+$('#bg').css('background', 'url(https://s3-us-west-2.amazonaws.com/game-timers/heartwood'+ Math.floor((Math.random() * 2) + 1) +'.png) center bottom no-repeat');
+Tera.init();
+</script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-66645980-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</html>
